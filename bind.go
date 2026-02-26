@@ -2,6 +2,7 @@ package ldap
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	enchex "encoding/hex"
 	"errors"
@@ -58,11 +59,15 @@ func (req *SimpleBindRequest) appendTo(envelope *ber.Packet) error {
 
 // SimpleBind performs the simple bind operation defined in the given request
 func (l *Conn) SimpleBind(simpleBindRequest *SimpleBindRequest) (*SimpleBindResult, error) {
+	return l.SimpleBindContext(context.Background(), simpleBindRequest)
+}
+
+func (l *Conn) SimpleBindContext(ctx context.Context, simpleBindRequest *SimpleBindRequest) (*SimpleBindResult, error) {
 	if simpleBindRequest.Password == "" && !simpleBindRequest.AllowEmptyPassword {
 		return nil, NewError(ErrorEmptyPassword, errors.New("ldap: empty password not allowed by the client"))
 	}
 
-	msgCtx, err := l.doRequest(l.ctx, simpleBindRequest)
+	msgCtx, err := l.doRequest(ctx, simpleBindRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -96,12 +101,16 @@ func (l *Conn) SimpleBind(simpleBindRequest *SimpleBindRequest) (*SimpleBindResu
 // It does not allow unauthenticated bind (i.e. empty password). Use the UnauthenticatedBind method
 // for that.
 func (l *Conn) Bind(username, password string) error {
+	return l.BindContext(context.Background(), username, password)
+}
+
+func (l *Conn) BindContext(ctx context.Context, username, password string) error {
 	req := &SimpleBindRequest{
 		Username:           username,
 		Password:           password,
 		AllowEmptyPassword: false,
 	}
-	_, err := l.SimpleBind(req)
+	_, err := l.SimpleBindContext(ctx, req)
 	return err
 }
 
@@ -261,7 +270,7 @@ func parseParams(str string) (map[string]string, error) {
 	var state int
 	for i := 0; i <= len(str); i++ {
 		switch state {
-		case 0: //reading key
+		case 0: // reading key
 			if i == len(str) {
 				return nil, fmt.Errorf("syntax error on %d", i)
 			}
@@ -270,7 +279,7 @@ func parseParams(str string) (map[string]string, error) {
 				continue
 			}
 			state = 1
-		case 1: //reading value
+		case 1: // reading value
 			if i == len(str) {
 				m[key] = value
 				break
@@ -289,7 +298,7 @@ func parseParams(str string) (map[string]string, error) {
 			default:
 				value += string(str[i])
 			}
-		case 2: //inside quotes
+		case 2: // inside quotes
 			if i == len(str) {
 				return nil, fmt.Errorf("syntax error on %d", i)
 			}
@@ -651,7 +660,6 @@ func (l *Conn) GSSAPIBindRequest(client GSSAPIClient, req *GSSAPIBindRequest) er
 }
 
 func (l *Conn) saslBindTokenExchange(reqControls []Control, reqToken []byte) ([]byte, error) {
-
 	// Construct LDAP Bind request with GSSAPI SASL mechanism.
 	envelope := ber.Encode(ber.ClassUniversal, ber.TypeConstructed, ber.TagSequence, nil, "LDAP Request")
 	envelope.AppendChild(ber.NewInteger(ber.ClassUniversal, ber.TypePrimitive, ber.TagInteger, l.nextMessageID(), "MessageID"))

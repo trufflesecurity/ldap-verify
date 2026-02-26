@@ -1,0 +1,13 @@
+#!/bin/bash
+set -eu -o pipefail
+
+cd "$(dirname "$0")"
+
+if ! [ -f glauth.key ]; then
+  openssl req -x509 -newkey rsa:4096 \
+    -keyout glauth.key -out glauth.crt \
+    -days 365 -nodes -subj "/CN=localhost"
+fi
+
+exec mise x github:glauth/glauth -- \
+  glauth -c testing.cfg
