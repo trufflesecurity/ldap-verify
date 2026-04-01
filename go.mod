@@ -1,4 +1,4 @@
-module github.com/mariduv/ldap-verify
+module github.com/trufflesecurity/ldap-verify
 
 go 1.24.0
 
