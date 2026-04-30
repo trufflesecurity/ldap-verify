@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ['1.24', '1.23']
+        go: ['1.24']
     name: Go ${{ matrix.go }}.x PR Validate (Modules)
     steps:
       - name: Checkout code
@@ -35,5 +35,5 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
-          version: v1.64.8
+          version: v2.11.4
           only-new-issues: true
