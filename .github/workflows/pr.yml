@@ -18,8 +18,17 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go }}
-      - name: Version
-        run: go version
+      - name: Start glauth LDAP server
+        run: |
+          cd glauth
+          openssl req -x509 -newkey rsa:4096 \
+            -keyout glauth.key -out glauth.crt \
+            -days 1 -nodes -subj "/CN=localhost" 2>/dev/null
+          curl -fsSL -o glauth-bin \
+            https://github.com/glauth/glauth/releases/download/GLAuth-v2.5.0/glauth-linux-amd64
+          chmod +x glauth-bin
+          ./glauth-bin -c testing.cfg &
+          sleep 2
       - name: Build and Validate
         run: |
           go vet .
