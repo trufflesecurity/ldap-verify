@@ -9,16 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [
-          '1.19',
-          '1.18',
-          '1.17',
-          '1.16',
-          '1.15',
-          '1.14',
-        ]
-        branch: [ '.', './v3' ]
-    name: Go ${{ matrix.go }}.x PR Validate ${{ matrix.branch }} (Modules)
+        go: ['1.24', '1.23']
+    name: Go ${{ matrix.go }}.x PR Validate (Modules)
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -30,7 +22,6 @@ jobs:
         run: go version
       - name: Build and Validate
         run: |
-          cd ${{ matrix.branch }}
           go vet .
           go test .
           go test -cover -race -cpu 1,2,4 .
@@ -42,7 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3.2.0
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: v1.50.0
+          version: v1.64.8
           only-new-issues: true
