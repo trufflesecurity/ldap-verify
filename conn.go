@@ -530,26 +530,26 @@ func (l *Conn) processMessages() {
 				// successfully write the message.
 				l.messageContexts[message.MessageID] = message.Context
 
-			// Add timeout if defined
-			var cancelTimeout context.CancelFunc
-			if l.requestTimeout > 0 {
-				message.Context.ctx, cancelTimeout = context.WithTimeout(message.Context.ctx, time.Duration(l.requestTimeout))
-			}
+				// Add timeout if defined
+				var cancelTimeout context.CancelFunc
+				if l.requestTimeout > 0 {
+					message.Context.ctx, cancelTimeout = context.WithTimeout(message.Context.ctx, time.Duration(l.requestTimeout))
+				}
 
-			go func() {
-				select {
-				case <-message.Context.ctx.Done():
-					timeoutMessage := &messagePacket{
-						Op:        MessageTimeout,
-						MessageID: message.MessageID,
+				go func() {
+					select {
+					case <-message.Context.ctx.Done():
+						timeoutMessage := &messagePacket{
+							Op:        MessageTimeout,
+							MessageID: message.MessageID,
+						}
+						l.sendProcessMessage(l.ctx, timeoutMessage)
+					case <-message.Context.done:
 					}
-					l.sendProcessMessage(l.ctx, timeoutMessage)
-				case <-message.Context.done:
-				}
-				if cancelTimeout != nil {
-					cancelTimeout()
-				}
-			}()
+					if cancelTimeout != nil {
+						cancelTimeout()
+					}
+				}()
 			case MessageResponse:
 				l.Debug.Printf("Receiving message %d", message.MessageID)
 				if msgCtx, ok := l.messageContexts[message.MessageID]; ok {
