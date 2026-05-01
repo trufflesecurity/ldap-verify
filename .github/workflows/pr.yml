@@ -2,35 +2,35 @@ name: PR
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   gomod:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [
-          '1.19',
-          '1.18',
-          '1.17',
-          '1.16',
-          '1.15',
-          '1.14',
-        ]
-        branch: [ '.', './v3' ]
-    name: Go ${{ matrix.go }}.x PR Validate ${{ matrix.branch }} (Modules)
+        go: ['1.24']
+    name: Go ${{ matrix.go }}.x PR Validate (Modules)
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go }}
-      - name: Version
-        run: go version
+      - name: Start glauth LDAP server
+        run: |
+          cd glauth
+          openssl req -x509 -newkey rsa:4096 \
+            -keyout glauth.key -out glauth.crt \
+            -days 1 -nodes -subj "/CN=localhost" 2>/dev/null
+          curl -fsSL -o glauth-bin \
+            https://github.com/glauth/glauth/releases/download/GLAuth-v2.5.0/glauth-linux-amd64
+          chmod +x glauth-bin
+          ./glauth-bin -c testing.cfg &
+          sleep 2
       - name: Build and Validate
         run: |
-          cd ${{ matrix.branch }}
           go vet .
           go test .
           go test -cover -race -cpu 1,2,4 .
@@ -40,9 +40,9 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3.2.0
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: v1.50.0
+          version: v2.11.4
           only-new-issues: true

@@ -531,8 +531,9 @@ func (l *Conn) processMessages() {
 				l.messageContexts[message.MessageID] = message.Context
 
 				// Add timeout if defined
+				var cancelTimeout context.CancelFunc
 				if l.requestTimeout > 0 {
-					message.Context.ctx, _ = context.WithTimeout(message.Context.ctx, time.Duration(l.requestTimeout))
+					message.Context.ctx, cancelTimeout = context.WithTimeout(message.Context.ctx, time.Duration(l.requestTimeout))
 				}
 
 				go func() {
@@ -544,6 +545,9 @@ func (l *Conn) processMessages() {
 						}
 						l.sendProcessMessage(l.ctx, timeoutMessage)
 					case <-message.Context.done:
+					}
+					if cancelTimeout != nil {
+						cancelTimeout()
 					}
 				}()
 			case MessageResponse:
